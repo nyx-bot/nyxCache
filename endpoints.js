@@ -80,7 +80,7 @@ module.exports = () => new Promise(async res => {
         writeStream.on(`finish`, () => {
             console.log(`Media fetched successfully!`);
 
-            res.send(`Cached!`)
+            res.end(`Cached!`)
 
             if(entry) {
                 console.log(`Entry already exists for ${messageID}-${fileName}; updating the expiry date..`)
