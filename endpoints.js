@@ -64,7 +64,6 @@ module.exports = () => new Promise(async res => {
 
         superagent.get(getUrl).set(`User-Agent`, useragent).then(async r => {
             console.log(`Media fetched successfully!`)
-            const imageBuffer = r.body;
             if(!fs.existsSync(`./cache/attachments`)) {
                 console.log(`Creating attachments dir...`)
                 fs.mkdirSync(`./cache/attachments`)
@@ -73,14 +72,19 @@ module.exports = () => new Promise(async res => {
                 console.log(`File previously existed; removing...`)
                 await new Promise(res => fs.rm(`./cache/attachments/${messageID}-${fileName}.${fileType}`, res));
             };
-	    console.log(typeof imageBuffer == `object` ? imageBuffer : typeof imageBuffer)
-            fs.writeFile(`./cache/attachments/${messageID}-${fileName}.${fileType}`, imageBuffer, async () => {
-                console.log(`Successfully wrote file!`)
+	        console.log(typeof r.body)
+            fs.writeFile(`./cache/attachments/${messageID}-${fileName}.${fileType}`, r.body, async () => {
+                console.log(`Successfully wrote file!`);
+
+                const deleted = delete r.body;
+                console.log(deleted ? `Hopefully cleared buffer from memory` : `"delete" call returned false... ohno`)
+
                 if(entry) {
                     console.log(`Entry already exists for ${messageID}-${fileName}; updating the expiry date..`)
                     entry.update({
                         due: Date.now() + fileDeleteTime
-                    }).then(r => console.log(`...done!`))
+                    }).then(r => console.log(`...done!`));
+                    return
                 } else {
                     console.log(`Creating new DB entry...`)
                     seq.models.Image.create({
@@ -92,7 +96,8 @@ module.exports = () => new Promise(async res => {
                         relativeName: `${fileName}`
                     }).then(r => {
                         console.log(`...done!\nSaved as:\n| ${Object.entries(r.dataValues).map(a => `${a[0]}: ${a[1]}`).join(`\n| `)}`)
-                    })
+                    });
+                    return;
                 }
             })
         })
