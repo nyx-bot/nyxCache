@@ -48,6 +48,11 @@ module.exports = () => new Promise(async res => {
         const fileName = url.split(`/`).slice(-1)[0].split(`.`).slice(0, -1)[0];
         const fileType = url.split(`.`).slice(-1)[0];
 
+        if(!fs.existsSync(`./cache/attachments`)) {
+            console.log(`Creating attachments dir...`)
+            fs.mkdirSync(`./cache/attachments`)
+        }
+
         const entry = await global.seq.models.Image.findOne({
             where: {
                 messageID,
@@ -60,47 +65,59 @@ module.exports = () => new Promise(async res => {
         let getUrl = url;
         if(fileType.match(/(png|jpg|jpeg|gif)/)) getUrl = url + `${url.includes(`discord`) ? `?size=2048` : ``}`
 
-        console.log(`Saving media "${fileName}":\n  URL: ${getUrl}\n  Type: ${fileType}`)
+        console.log(`Saving media "${fileName}":\n  URL: ${getUrl}\n  Type: ${fileType}`);
 
-        superagent.get(getUrl).set(`User-Agent`, useragent).then(async r => {
+        if(fs.existsSync(`./cache/attachments/${messageID}-${fileName}.${fileType}`)) {
+            console.log(`File previously existed; removing...`)
+            await new Promise(res => fs.rm(`./cache/attachments/${messageID}-${fileName}.${fileType}`, res));
+        };
+
+        const request = superagent.get(getUrl).set(`User-Agent`, useragent);
+        
+        const writeStream = fs.createWriteStream(`./cache/attachments/${messageID}-${fileName}.${fileType}`);
+        
+        writeStream.on(`finish`, () => {
             console.log(`Media fetched successfully!`)
-            if(!fs.existsSync(`./cache/attachments`)) {
-                console.log(`Creating attachments dir...`)
-                fs.mkdirSync(`./cache/attachments`)
+
+            if(entry) {
+                console.log(`Entry already exists for ${messageID}-${fileName}; updating the expiry date..`)
+                entry.update({
+                    due: Date.now() + fileDeleteTime
+                }).then(r => console.log(`...done!`));
+                return
+            } else {
+                console.log(`Creating new DB entry...`)
+                seq.models.Image.create({
+                    location: `./cache/attachments/${messageID}-${fileName}.${fileType}`,
+                    origin: url,
+                    due: Date.now() + fileDeleteTime,
+                    messageID,
+                    imageName: `${fileName}.${fileType}`,
+                    relativeName: `${fileName}`
+                }).then(r => {
+                    console.log(`...done!\nSaved as:\n| ${Object.entries(r.dataValues).map(a => `${a[0]}: ${a[1]}`).join(`\n| `)}`)
+                });
+                return;
             }
-            if(fs.existsSync(`./cache/attachments/${messageID}-${fileName}.${fileType}`)) {
-                console.log(`File previously existed; removing...`)
-                await new Promise(res => fs.rm(`./cache/attachments/${messageID}-${fileName}.${fileType}`, res));
-            };
-	        console.log(typeof r.body)
-            fs.writeFile(`./cache/attachments/${messageID}-${fileName}.${fileType}`, r.body, async () => {
-                console.log(`Successfully wrote file!`);
+        });
 
-                const deleted = delete r.body;
-                console.log(deleted ? `Hopefully cleared buffer from memory` : `"delete" call returned false... ohno`)
+        try {
+            request.pipe(writeStream);
+        } catch(e) {
+            console.error(e)
+            
+            if(entry) {
+                seq.models.Image.destroy({
+                    where: {
+                        messageID: entry.dataValues.messageID,
+                        due: entry.dataValues.due,
+                        imageName: entry.dataValues.imageName
+                    }
+                })
 
-                if(entry) {
-                    console.log(`Entry already exists for ${messageID}-${fileName}; updating the expiry date..`)
-                    entry.update({
-                        due: Date.now() + fileDeleteTime
-                    }).then(r => console.log(`...done!`));
-                    return
-                } else {
-                    console.log(`Creating new DB entry...`)
-                    seq.models.Image.create({
-                        location: `./cache/attachments/${messageID}-${fileName}.${fileType}`,
-                        origin: url,
-                        due: Date.now() + fileDeleteTime,
-                        messageID,
-                        imageName: `${fileName}.${fileType}`,
-                        relativeName: `${fileName}`
-                    }).then(r => {
-                        console.log(`...done!\nSaved as:\n| ${Object.entries(r.dataValues).map(a => `${a[0]}: ${a[1]}`).join(`\n| `)}`)
-                    });
-                    return;
-                }
-            })
-        })
+                console.log(`Entry already exists for ${messageID}-${fileName}; updating the expiry date..`)
+            }
+        }
     });
 
     express.listen(8096)
