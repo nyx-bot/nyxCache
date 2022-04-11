@@ -13,6 +13,8 @@ module.exports = () => {
                 }
             }
         }).then(async images => {
+            console.log(images.length + ` files pending deletion!`)
+
             const func = (i) => {
                 seq.models.Image.destroy({
                     where: {
