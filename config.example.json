@@ -1,0 +1,6 @@
+{
+    "authorization": "{ the authentication key that accepts incoming requests -- use something like https://passwordsgenerator.net/ }",
+    "locations": {
+        "nullImage": "https://i.nyxbot.gg/null.png"
+    }
+}

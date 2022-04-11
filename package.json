@@ -1,0 +1,16 @@
+{
+  "name": "nyxCache",
+  "version": "1.0.0",
+  "description": "Nyx's personal caching service",
+  "main": "index.js",
+  "repository": "https://gitlab.com/nyxbot/nyxcache",
+  "author": "Syl <syl@nyxbot.xyz>",
+  "license": "MIT",
+  "dependencies": {
+    "cron": "^1.8.2",
+    "express": "^4.17.1",
+    "sequelize": "^6.9.0",
+    "sqlite3": "^5.0.2",
+    "superagent": "^6.1.0"
+  }
+}
