@@ -38,10 +38,11 @@ module.exports = () => new Promise(async res => {
     express.use(require('./core/authenticator'));
 
     express.post(`/saveFile`, async (req, res) => {
-        res.send(`Caching!`)
         const r = req.body;
         if(typeof r !== `object`) return res.status(500).send(`Body is not parsed as an object.`)
         if(!r.url) return res.status(400).send(`Missing url body parameter.`);
+
+        res.writeHead(200)
 
         const url = r.url.split(`?`)[0];
         const messageID = url.split(`/`).slice(-2)[0];
@@ -77,7 +78,9 @@ module.exports = () => new Promise(async res => {
         const writeStream = fs.createWriteStream(`./cache/attachments/${messageID}-${fileName}.${fileType}`);
         
         writeStream.on(`finish`, () => {
-            console.log(`Media fetched successfully!`)
+            console.log(`Media fetched successfully!`);
+
+            res.send(`Cached!`)
 
             if(entry) {
                 console.log(`Entry already exists for ${messageID}-${fileName}; updating the expiry date..`)
@@ -113,9 +116,9 @@ module.exports = () => new Promise(async res => {
                         due: entry.dataValues.due,
                         imageName: entry.dataValues.imageName
                     }
-                })
+                });
 
-                console.log(`Entry already exists for ${messageID}-${fileName}; updating the expiry date..`)
+                res.send(`Internal Error.`)
             }
         }
     });
