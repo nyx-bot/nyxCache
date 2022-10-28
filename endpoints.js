@@ -48,6 +48,7 @@ module.exports = () => new Promise(async res => {
         res.writeHead(200)
 
         const url = r.url.split(`?`)[0];
+        const buf = r.image && typeof r.image == `object` && r.image.type == `Buffer` && r.image.data ? Buffer.from(r.image.data) : null;
         const messageID = url.split(`/`).slice(-2)[0];
         const fileName = url.split(`/`).slice(-1)[0].split(`.`).slice(0, -1)[0];
         const fileType = url.split(`.`).slice(-1)[0];
@@ -76,7 +77,7 @@ module.exports = () => new Promise(async res => {
             await new Promise(res => fs.rm(`./cache/attachments/${messageID}-${fileName}.${fileType}`, res));
         };
 
-        const request = superagent.get(getUrl).set(`User-Agent`, useragent);
+        const request = buf ? (require('stream')).Readable.from(buf) : superagent.get(getUrl).set(`User-Agent`, useragent);
         
         const writeStream = fs.createWriteStream(`./cache/attachments/${messageID}-${fileName}.${fileType}`);
         
