@@ -14,7 +14,7 @@ module.exports = () => new Promise(async res => {
     const bodyParser = require('body-parser');
     //express.use(require(`express`).json());
     express.use(bodyParser.json({ limit: '20mb' }))
-    express.use(express.urlencoded({ limit: '20mb' }));
+    //express.use(express.urlencoded({ limit: '20mb' }));
 
     express.get(`/media/:messageID/:filename`, (req, res) => {
         seq.models.Image.findOne({where: {
