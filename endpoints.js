@@ -173,7 +173,7 @@ module.exports = () => new Promise(async res => {
                         let ffmpegArgs = [];
     
                         if(codecTypes.video) {
-                            ffmpegArgs.push(`-vcodec`, ...(hwAccelEnabled ? [`h264_vaapi`, `-profile`, `578`] : [`h264`, `-profile`, `baseline`]), `-r`, `30`, );
+                            ffmpegArgs.push(`-vcodec`, ...(hwAccelEnabled ? [`h264_vaapi`, `-profile`, `578`] : [`h264`, `-profile:v`, `baseline`]), `-r`, `30`, );
     
                             let filter = [];
     
